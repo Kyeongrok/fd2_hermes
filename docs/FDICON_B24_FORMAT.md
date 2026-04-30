@@ -1,44 +1,44 @@
-# FDICON.B24 格式分析 (修正版)
+# FDICON.B24 포맷 분석 (수정판)
 
-## 概述
-FDICON.B24 是FD2游戏的图标资源文件，包含140个24x24像素图标，每个图标有最多12帧动画。
+## 개요
+FDICON.B24는 FD2 게임의 아이콘 리소스 파일로, 140개의 24x24픽셀 아이콘을 포함하며 각 아이콘은 최대 12프레임의 애니메이션을 가집니다.
 
-## 文件结构
+## 파일 구조
 
-### 头部 (6 字节)
+### 헤더 (6바이트)
 ```
-偏移 0-1: width (WORD) = 24
-偏移 2-3: height (WORD) = 24  
-偏移 4-5: 未知 (可能是版本或保留)
-```
-
-### 索引表 (偏移 6 到 6726)
-- 大小: 6720 字节
-- 每个图标 48 字节索引数据
-- 共 140 个图标 (6720 / 48 = 140)
-- 每个索引包含 13 个 DWORD (4字节) 偏移值
-
-### 索引条目结构
-```
-图标索引结构 (48字节):
-  DWORD[0-11]: 12帧动画数据的偏移地址
-  DWORD[12]: 结束偏移 (用于计算最后一帧大小)
+오프셋 0-1: width (WORD) = 24
+오프셋 2-3: height (WORD) = 24
+오프셋 4-5: 미상 (버전 또는 예약)
 ```
 
-### 数据区 (偏移 6726 之后)
-包含压缩的图标帧数据。
+### 인덱스 테이블 (오프셋 6 ~ 6726)
+- 크기: 6720바이트
+- 아이콘당 48바이트 인덱스 데이터
+- 총 140개 아이콘 (6720 / 48 = 140)
+- 각 인덱스는 13개의 DWORD (4바이트) 오프셋값을 포함
 
-## 帧数据压缩格式
+### 인덱스 항목 구조
+```
+아이콘 인덱스 구조 (48바이트):
+  DWORD[0-11]: 12프레임 애니메이션 데이터의 오프셋 주소
+  DWORD[12]: 종료 오프셋 (마지막 프레임 크기 계산용)
+```
 
-图标帧使用 RLE (Run-Length Encoding) 压缩：
+### 데이터 영역 (오프셋 6726 이후)
+압축된 아이콘 프레임 데이터를 포함합니다.
 
-### 编码规则
-- **字面量**: 非 0xFE 字节直接作为像素值
-- **RLE 标记**: 0xFE 表示压缩命令
-  - `0xFE 0x80-0xFF [value]`: 重复 value (cmd - 0x80 + 3) 次
-  - 例如: `FE C3 05` = 重复 0x05 (0xC3 - 0x80 + 3 = 68) 次
+## 프레임 데이터 압축 포맷
 
-### 解码算法
+아이콘 프레임은 RLE (Run-Length Encoding) 압축을 사용합니다:
+
+### 인코딩 규칙
+- **리터럴**: 0xFE가 아닌 바이트는 픽셀값으로 직접 사용
+- **RLE 마커**: 0xFE는 압축 명령을 나타냄
+  - `0xFE 0x80-0xFF [value]`: value를 (cmd - 0x80 + 3)번 반복
+  - 예시: `FE C3 05` = 0x05를 (0xC3 - 0x80 + 3 = 68)번 반복
+
+### 디코딩 알고리즘
 ```python
 def decode_icon_frame(data):
     result = []
@@ -52,7 +52,7 @@ def decode_icon_frame(data):
             i += 1
             
             if cmd >= 0x80:
-                # RLE: 重复下一个字节
+                # RLE: 다음 바이트 반복
                 count = (cmd - 0x80) + 3
                 if i < len(data):
                     val = data[i]
@@ -63,31 +63,31 @@ def decode_icon_frame(data):
         else:
             result.append(b)
     
-    return bytes(result[:576])  # 24x24 = 576 字节
+    return bytes(result[:576])  # 24x24 = 576바이트
 ```
 
-## 调色板
+## 팔레트
 
-图标使用 FDOTHER.DAT 中的调色板：
-- 位置: FDOTHER.DAT 资源28
-- 偏移: 0x21D119
-- 大小: 768 字节 (256色 x 3通道)
-- 格式: DOS 6-bit RGB (值乘以4转换为8-bit)
+아이콘은 FDOTHER.DAT의 팔레트를 사용합니다:
+- 위치: FDOTHER.DAT 리소스 28
+- 오프셋: 0x21D119
+- 크기: 768바이트 (256색 x 3채널)
+- 포맷: DOS 6비트 RGB (값에 4를 곱해 8비트로 변환)
 
-## Python 提取器
+## Python 추출기
 
 ```python
 import struct
 from PIL import Image
 
 def extract_fdicon_b24(icon_path, palette_path, output_dir):
-    """提取 FDICON.B24 中的所有图标"""
+    """FDICON.B24의 모든 아이콘 추출"""
     
-    # 加载图标文件
+    # 아이콘 파일 로드
     with open(icon_path, 'rb') as f:
         icon_data = f.read()
     
-    # 加载调色板
+    # 팔레트 로드
     with open(palette_path, 'rb') as f:
         other_data = f.read()
     
@@ -100,7 +100,7 @@ def extract_fdicon_b24(icon_path, palette_path, output_dir):
         b = min(255, pal_data[i * 3 + 2] * 4)
         palette.extend([r, g, b])
     
-    # 解析索引表
+    # 인덱스 테이블 파싱
     index_data = icon_data[6:6+6720]
     icon_count = 140
     
@@ -111,7 +111,7 @@ def extract_fdicon_b24(icon_path, palette_path, output_dir):
             val = struct.unpack('<I', index_data[base + j*4:base + j*4 + 4])[0]
             offsets.append(val)
         
-        # 提取第一帧
+        # 첫 번째 프레임 추출
         frame_start = offsets[0]
         frame_end = offsets[1] if offsets[1] > frame_start else frame_start + 600
         
@@ -126,7 +126,7 @@ def extract_fdicon_b24(icon_path, palette_path, output_dir):
                 img.save(f'{output_dir}/icon_{icon_idx:03d}.png')
 
 def decode_icon_frame(data):
-    """解码单帧图标数据"""
+    """단일 프레임 아이콘 데이터 디코딩"""
     result = []
     i = 0
     while i < len(data) and len(result) < 600:
@@ -147,38 +147,38 @@ def decode_icon_frame(data):
             result.append(b)
     return bytes(result[:576])
 
-# 使用示例
+# 사용 예시
 extract_fdicon_b24('game/FDICON.B24', 'game/FDOTHER.DAT', 'extracted/icons')
 ```
 
-## 提取结果
-- 成功提取 125 个图标
-- 保存路径: `extracted/icons_v2/`
-- 预览图: `extracted/icons_v2_preview.png`
+## 추출 결과
+- 125개 아이콘 추출 성공
+- 저장 경로: `extracted/icons_v2/`
+- 미리보기 이미지: `extracted/icons_v2_preview.png`
 
-## 与之前分析的差异
+## 이전 분석과의 차이점
 
-### 之前错误分析
-1. 误认为偏移表是 `[padding][offset]` 格式
-2. 实际上索引表每个图标有48字节，包含13个偏移值
-3. 数据区的 `02 00` 簇是另一段代码的数据，不是图标格式
+### 이전의 잘못된 분석
+1. 오프셋 테이블을 `[padding][offset]` 포맷으로 잘못 판단
+2. 실제로는 인덱스 테이블이 아이콘당 48바이트이며, 13개의 오프셋값을 포함
+3. 데이터 영역의 `02 00` 클러스터는 다른 코드 데이터이며, 아이콘 포맷과 무관
 
-### 正确分析来源
-通过 IDA Pro 反编译代码 `sub_11019` 发现:
-- `fseek(file, 6, 0)` - 索引表从偏移6开始
-- `v13[n13] = *(_DWORD *)&v6[48 * a5 + 4 * n13]` - 每个图标48字节索引
-- `v14 = v13[12] - v13[0]` - 用第13个偏移计算大小
+### 올바른 분석 출처
+IDA Pro 디컴파일 코드 `sub_11019` 분석으로 확인:
+- `fseek(file, 6, 0)` - 인덱스 테이블은 오프셋 6부터 시작
+- `v13[n13] = *(_DWORD *)&v6[48 * a5 + 4 * n13]` - 아이콘당 48바이트 인덱스
+- `v14 = v13[12] - v13[0]` - 13번째 오프셋으로 크기 계산
 
-## 图标内容
-提取的图标包含：
-- 游戏界面元素
-- 按钮和控件
-- 角色头像/图标
-- 物品图标
-- 状态指示器
+## 아이콘 내용
+추출된 아이콘에는 다음이 포함됩니다:
+- 게임 UI 요소
+- 버튼 및 컨트롤
+- 캐릭터 초상화/아이콘
+- 아이템 아이콘
+- 상태 표시기
 
-## 注意事项
-1. 每个图标最多12帧动画
-2. 帧大小不固定，使用压缩格式
-3. 有些偏移值可能无效（超出文件范围）
-4. 调色板必须从FDOTHER.DAT加载
+## 주의사항
+1. 각 아이콘은 최대 12프레임 애니메이션 가능
+2. 프레임 크기는 고정되지 않으며 압축 포맷 사용
+3. 일부 오프셋값은 파일 범위를 벗어나 유효하지 않을 수 있음
+4. 팔레트는 반드시 FDOTHER.DAT에서 로드해야 함
