@@ -1,49 +1,49 @@
-# FD2 逆向工程项目
+# FD2 리버스 엔지니어링 프로젝트
 
-## 目录结构
+## 디렉토리 구조
 
 ```
 fd2_hermes/
 ├── docs/
-│   ├── AFM_FORMAT.md          # AFM 格式分析文档
-│   └── afm_animations/        # 解码的动画文件
+│   ├── AFM_FORMAT.md          # AFM 포맷 분석 문서
+│   └── afm_animations/        # 디코딩된 애니메이션 파일
 │       ├── afm_0.gif
 │       ├── afm_1.gif
 │       └── ...
 ├── tools/
-│   └── decode_afm_fixed.py    # AFM 解码工具
+│   └── decode_afm_fixed.py    # AFM 디코딩 도구
 ├── game/
-│   └── ANI.DAT                # 游戏数据
+│   └── ANI.DAT                # 게임 데이터
 └── README.md
 ```
 
-## 已完成工作
+## 완료된 작업
 
-### ANI.DAT AFM 解码
+### ANI.DAT AFM 디코딩
 
-- 分析了 ANI.DAT 文件结构
-- 理解了 AFM 索引和帧格式
-- 解码了 10 种命令类型 (0x00-0x09)
-- 成功导出 9 个 AFM 动画为 GIF
+- ANI.DAT 파일 구조 분석
+- AFM 인덱스 및 프레임 포맷 이해
+- 10가지 명령 타입 디코딩 (0x00-0x09)
+- 9개 AFM 애니메이션을 GIF로 추출 성공
 
-### 关键发现
+### 주요 발견 사항
 
-1. **索引格式**: 4 字节偏移，从文件偏移 6 开始
-2. **帧数据是命令流**: 不是直接像素数据，而是命令序列
-3. **命令 0x09**: 从帧数据复制到像素缓冲区，不是缓冲区内部复制
-4. **调色板**: DOS 6-bit 格式，需要 ×4 转换
+1. **인덱스 포맷**: 4바이트 오프셋, 파일 오프셋 6부터 시작
+2. **프레임 데이터는 명령 스트림**: 직접 픽셀 데이터가 아닌 명령 시퀀스
+3. **명령 0x09**: 프레임 데이터에서 픽셀 버퍼로 복사 (버퍼 내부 복사 아님)
+4. **팔레트**: DOS 6비트 포맷, ×4 변환 필요
 
-## 工具使用
+## 도구 사용법
 
 ```bash
 cd /home/yinming/fd2_hermes/tools
 python3 decode_afm_fixed.py
 ```
 
-输出目录: `docs/afm_animations/`
+출력 디렉토리: `docs/afm_animations/`
 
-## 下一步
+## 다음 단계
 
-- 分析 BG.DAT (背景图像)
-- 分析 FIGANI.DAT (角色动画)
-- 分析 TAI.DAT (图块数据)
+- BG.DAT 분석 (배경 이미지)
+- FIGANI.DAT 분석 (캐릭터 애니메이션)
+- TAI.DAT 분석 (타일 데이터)
